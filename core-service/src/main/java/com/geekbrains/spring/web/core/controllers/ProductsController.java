@@ -1,14 +1,17 @@
 package com.geekbrains.spring.web.core.controllers;
 
-import com.geekbrains.spring.web.api.exceptions.CartServiceAppError;
+import com.geekbrains.spring.web.api.exceptions.AppError;
 import com.geekbrains.spring.web.api.exceptions.ResourceNotFoundException;
 import com.geekbrains.spring.web.core.converters.ProductConverter;
 import com.geekbrains.spring.web.api.core.ProductDto;
 import com.geekbrains.spring.web.core.entities.Product;
+import com.geekbrains.spring.web.core.exceptions.FieldsValidationError;
 import com.geekbrains.spring.web.core.services.ProductsService;
 import com.geekbrains.spring.web.core.validators.ProductValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -57,17 +60,44 @@ public class ProductsController {
                     @ApiResponse(
                             description = "Успешный ответ", responseCode = "200",
                             content = @Content(schema = @Schema(implementation = ProductDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Продукт не найден", responseCode = "404",
+                            content = @Content(schema = @Schema(implementation = AppError.class))
+                    ),
+                    @ApiResponse(
+                            description = "Ошибка валидации продукта", responseCode = "400",
+                            content = @Content(schema = @Schema(implementation = FieldsValidationError.class))
                     )
+
+            },
+            parameters = {
+                    @Parameter(in = ParameterIn.PATH, name = "id", description = "Идентификатор продукта", required = true, example= "1", schema = @Schema(implementation = Long.class))
             }
     )
-    public ProductDto getProductById(
-            @PathVariable @Parameter(description = "Идентификатор продукта", required = true) Long id
-    ) {
+    public ProductDto getProductById(@PathVariable Long id) {
         Product product = productsService.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product not found, id: " + id));
         return productConverter.entityToDto(product);
     }
 
     @PostMapping
+    @Operation(
+            summary = "Запись нового продукта",
+            responses = {
+                    @ApiResponse(
+                            description = "Успешный ответ", responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = ProductDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Ошибка валидации продукта", responseCode = "400",
+                            content = @Content(schema = @Schema(implementation = FieldsValidationError.class))
+                    )
+
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Продукт для создания"
+            )
+    )
     public ProductDto saveNewProduct(@RequestBody ProductDto productDto) {
         productValidator.validate(productDto);
         Product product = productConverter.dtoToEntity(productDto);
@@ -76,6 +106,23 @@ public class ProductsController {
     }
 
     @PutMapping
+    @Operation(
+            summary = "Обновление продукта",
+            responses = {
+                    @ApiResponse(
+                            description = "Успешный ответ", responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = ProductDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Ошибка валидации продукта", responseCode = "400",
+                            content = @Content(schema = @Schema(implementation = FieldsValidationError.class))
+                    )
+
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Продукт для обновления"
+            )
+    )
     public ProductDto updateProduct(@RequestBody ProductDto productDto) {
         productValidator.validate(productDto);
         Product product = productsService.update(productDto);
@@ -83,7 +130,24 @@ public class ProductsController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteById(@PathVariable Long id) {
+    @Operation(
+            summary = "Удаление продукта",
+            responses = {
+                    @ApiResponse(
+                            description = "Успешный ответ", responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = ProductDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Заказы не найдены", responseCode = "404",
+                            content = @Content(schema = @Schema(implementation = AppError.class))
+                    ),
+                    @ApiResponse(
+                            description = "Внутренняя ошибка", responseCode = "500"
+                    ),
+
+            }
+    )
+    public void deleteById(@PathVariable @Parameter(description = "Идентификатор продукта", required = true) Long id) {
         productsService.deleteById(id);
     }
 }

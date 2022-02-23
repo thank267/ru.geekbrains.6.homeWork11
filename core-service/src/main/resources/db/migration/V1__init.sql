@@ -48,12 +48,3 @@ values ('bob', 200.00, 'address', '12345');
 
 insert into order_items (product_id, order_id, quantity, price_per_product, price)
 values (1, 1, 2, 100.00, 200.00);
-
-
-
-
-
-
-
-
-
